@@ -1,0 +1,20 @@
+{
+  "name": "detect",
+  "description": "An npm package for detecting npm package dependencies.",
+  "version": "0.0.1",
+  "homepage": "https://github.com/tfe/npm-detect",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tfe/npm-detect.git"
+  },
+  "author": "Todd Eichel <todd@toddeichel.com> (http://toddeichel.com/)",
+  "directories": {
+    "lib": "."
+  },
+  "bin": {
+    "npm-detect": "./bin/detect.js"
+  },
+  "engines": {
+    "node": "*"
+  }
+}
