@@ -2,6 +2,7 @@
 
 var forAllFiles = require('../lib/tree-walk.js').forAllFiles,
     npm = require('npm'),
+    step = require('step'),
     util = require('util'),
     path = require('path'),
     fs = require('fs'),
@@ -24,12 +25,22 @@ forAllFiles(dir,
   function (err) {
     if (err) throw err;
     
-    util.log("Finished scanning, checking " + packages.length + " packages against npm registry...");
-    
-    for (i=0; i < packages.length; i++) {
-      var packageName = packages[i];
-      checkRegistry(packageName);
-    }
+    step(
+      function checkPackages() {
+        util.log("Finished scanning, checking " + packages.length + " packages against npm registry...");
+        
+        for (i=0; i < packages.length; i++) {
+          var packageName = packages[i];
+          checkRegistry(packageName, this.parallel());
+        }
+      },
+      
+      function finalize(err) {
+        if (err) throw err;
+        util.log("Finished: " + npmPackages.length + " npm packages found");
+      }
+      
+    );
   }
 )
 
@@ -61,7 +72,7 @@ function processFile(file) {
   util.log('  ' + file);
 }
 
-function checkRegistry(name) {
+function checkRegistry(name, callback) {
   
   // Ideally, we'd accomplish the below by using npm programmatically, but instead we're just
   // going to shell out and run npm because even when using npm programmatically, there's
@@ -90,5 +101,7 @@ function checkRegistry(name) {
         break;
       }
     }
+    callback();
   });
+  
 }
