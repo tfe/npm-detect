@@ -16,5 +16,8 @@
   },
   "engines": {
     "node": "*"
+  },
+  "dependencies": {
+    "npm": "~0.3.18"
   }
 }
