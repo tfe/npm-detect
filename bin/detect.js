@@ -14,7 +14,7 @@ var dir = '.',
     packages = [],      // array of all candidate packages found
     npmPackages = [];   // array of all packages that exist in the npm registry
 
-util.log('Scanning directory "' + resolvedDir + '"... ')
+console.log('Scanning directory \033[1m' + resolvedDir + '\033[0m... ')
 
 forAllFiles(dir,
   function (file, next) {
@@ -27,7 +27,13 @@ forAllFiles(dir,
     
     step(
       function checkPackages() {
-        util.log("Finished scanning, checking " + packages.length + " packages against npm registry...");
+        
+        if (packages.length < 1) {
+          console.log("Finished scanning, no packages found")
+          process.exit();
+        }
+        
+        console.log("Finished scanning, checking \033[1m" + packages.length + "\033[0m packages against npm registry (be patient)...");
         
         for (i=0; i < packages.length; i++) {
           var packageName = packages[i];
@@ -37,7 +43,34 @@ forAllFiles(dir,
       
       function finalize(err) {
         if (err) throw err;
-        util.log("Finished: " + npmPackages.length + " npm packages found");
+        
+        if (npmPackages.length < 1) {
+          console.log("Finished, no npm packages found");
+          process.exit();
+        }
+        
+        console.log("Finished, " + npmPackages.length + " npm packages found: ");
+        
+        var json = [];
+        json.push("{");
+        json.push('  "other package.json sections": "go here",');
+        json.push('  "dependencies": {');
+        
+        for (i=0; i < npmPackages.length; i++) {
+          var packageName = npmPackages[i];
+          console.log('  ' + packageName);
+          json.push('    "' + packageName + '": "*",');
+        }
+        
+        // strip the trailing comma from the last line
+        var line = json[json.length-1];
+        json[json.length-1] = line.substr(0, line.length-1);
+        
+        json.push('  }');
+        json.push('}');
+        
+        console.log("Sample package.json dependencies section:");
+        console.log(json.join("\n"));
       }
       
     );
@@ -60,7 +93,7 @@ function processFile(file) {
   fs.readFile(file, 'utf8', function (err, data) {
     if (err) throw err;
     
-    var requires = data.match(/require\(['"][a-z-_\.]*['"]\)/gi);
+    var requires = data.match(/require\(['"][a-z-_\.]*['"]\)/gi) || [];
     for (i=0; i < requires.length; i++) {
       var name = requires[i].match(/['"]([a-z-_\.]*)['"]/)[1];
       if (packages.indexOf(name) < 0) { // don't duplicate
@@ -69,7 +102,7 @@ function processFile(file) {
     }
   });
   
-  util.log('  ' + file);
+  console.log('  ' + file);
 }
 
 function checkRegistry(name, callback) {
@@ -81,7 +114,7 @@ function checkRegistry(name, callback) {
   exec('npm search ' + name, function (err, stdout, stderr) {
     if (err) throw err;
   
-    util.log('  ' + name);
+    process.stdout.write('  ' + name + '...');
   
     // check for npm problems
     if (stderr.search(/npm not ok/) > 0) {
@@ -96,11 +129,13 @@ function checkRegistry(name, callback) {
       var line = lines[i];
       var nameParts = line.split(' ')[0].split('@');
       if (nameParts[0] === name && nameParts.length === 2) {
-        util.log('    ' + 'found');
+        process.stdout.write(' ✓');
         npmPackages.push(name);
         break;
       }
     }
+    
+    process.stdout.write("\n");
     callback();
   });
   
